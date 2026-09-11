@@ -51,7 +51,8 @@ def main(
 
 @app.command("record")
 def record_cmd(
-    name: str = typer.Option("Meeting Session", "--name", "-n", help="Title or subject of the meeting."),
+    title: str = typer.Argument("Meeting Session", help="Title or subject of the meeting."),
+    name: str | None = typer.Option(None, "--name", "-n", help="Optional alias for meeting title."),
     preset: str = typer.Option("general", "--preset", "-p", help="Preset: general, standup, architecture_review, 1on1, client_discovery."),
     mic: str | None = typer.Option(None, "--mic", "-m", help="Microphone device name or ID substring."),
     loopback: str | None = typer.Option(None, "--loopback", "-l", help="Loopback speaker device name or ID substring."),
@@ -63,9 +64,10 @@ def record_cmd(
     git_commit: bool = typer.Option(False, "--git-commit", help="Automatically commit new note to Git inside vault directory."),
 ):
     """Start real-time meeting recording and live terminal HUD."""
+    meeting_name = name or title
     hud = LiveRecordingHUD(
         settings=settings,
-        meeting_name=name,
+        meeting_name=meeting_name,
         preset=preset,
         mic_device=mic,
         loopback_device=loopback,
