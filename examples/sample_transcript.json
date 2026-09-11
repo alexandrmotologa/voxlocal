@@ -1,0 +1,32 @@
+[
+  {
+    "start": 0.0,
+    "end": 3.2,
+    "speaker": "You",
+    "text": "Welcome everyone. Today we need to decide on our streaming audio ingestion pipeline for VoxLocal."
+  },
+  {
+    "start": 3.5,
+    "end": 8.0,
+    "speaker": "Remote Speaker 1",
+    "text": "We evaluated PyAudio versus SoundCard. We concluded that SoundCard with WASAPI loopback is the superior choice for Windows."
+  },
+  {
+    "start": 8.2,
+    "end": 12.5,
+    "speaker": "You",
+    "text": "I agree. I will finalize the WASAPI loopback implementation by Friday."
+  },
+  {
+    "start": 12.8,
+    "end": 16.0,
+    "speaker": "Remote Speaker 2",
+    "text": "Can we make sure we test it with multi-channel Bluetooth headsets as well?"
+  },
+  {
+    "start": 16.2,
+    "end": 19.5,
+    "speaker": "Remote Speaker 1",
+    "text": "Yes, let's add a test suite for Bluetooth audio sinks."
+  }
+]
