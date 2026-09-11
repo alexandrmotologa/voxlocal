@@ -1,0 +1,11 @@
+services:
+  voxlocal:
+    build: .
+    container_name: voxlocal
+    volumes:
+      - ./meetings:/app/meetings
+      - ./transcripts:/app/transcripts
+    environment:
+      - VOXLOCAL_OLLAMA_URL=http://host.docker.internal:11434
+      - VOXLOCAL_VAULT_DIR=/app/meetings
+    network_mode: "host"
