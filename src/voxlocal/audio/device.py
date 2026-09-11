@@ -2,8 +2,11 @@
 
 
 import logging
+import warnings
 
 import soundcard as sc
+
+warnings.filterwarnings("ignore", message=".*data discontinuity in recording.*")
 
 logger = logging.getLogger(__name__)
 

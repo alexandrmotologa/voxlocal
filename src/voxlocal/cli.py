@@ -3,6 +3,7 @@
 import json
 import threading
 import time
+import warnings
 from pathlib import Path
 
 import typer
@@ -16,6 +17,8 @@ from voxlocal.audio.loopback import LoopbackStreamReader
 from voxlocal.audio.mic import MicStreamReader
 from voxlocal.audio.resampler import calculate_db
 from voxlocal.config import settings
+
+warnings.filterwarnings("ignore", message=".*data discontinuity in recording.*")
 from voxlocal.daemon.hotkey import GlobalHotkeyListener
 from voxlocal.daemon.notify import send_notification
 from voxlocal.knowledge.database import KnowledgeDB
