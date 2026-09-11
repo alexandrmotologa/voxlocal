@@ -1,8 +1,47 @@
-# VoxLocal
+<p align="center">
+  <img src="docs/images/logo.png?raw=true" alt="VoxLocal Logo" width="130" style="border-radius: 24px;" />
+</p>
 
-100% offline ambient audio intelligence and meeting copilot for developers.
+<h1 align="center">VoxLocal</h1>
 
-VoxLocal captures microphone input and system speaker loopback concurrently, transcribes speech locally in sub-seconds with quantized Whisper, attributes speakers, and writes structured Markdown meeting summaries directly into your local vault. It requires zero cloud connections and operates with no telemetry.
+<p align="center">
+  <b>100% Offline Ambient Audio Intelligence and Meeting Copilot for Developers</b><br />
+  <i>Private dual-stream capture, quantized Whisper transcription, and structured Obsidian vault synthesis.</i>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License MIT" />
+  <img src="https://img.shields.io/badge/python-3.12%20%7C%203.13%20%7C%203.14-blue" alt="Python Version" />
+  <img src="https://img.shields.io/badge/inference-100%25%20Offline-emerald" alt="100% Offline" />
+  <img src="https://img.shields.io/badge/telemetry-Zero-red" alt="Zero Telemetry" />
+</p>
+
+---
+
+## Visual Interfaces
+
+### 1. Interactive Terminal HUD
+Live Rich terminal interface featuring dual-channel audio VU levels (WASAPI), diarized speaker turns, and instant bookmark shortcuts.
+
+<p align="center">
+  <img src="docs/images/terminal_tui.png?raw=true" alt="VoxLocal Terminal TUI" width="880" style="border-radius: 12px;" />
+</p>
+
+### 2. Companion Web Dashboard
+Lightweight local browser HUD (`voxlocal serve`) showing live audio meters, real-time dialogue feed, and instant full-text meeting search.
+
+<p align="center">
+  <img src="docs/images/web_dashboard.png?raw=true" alt="VoxLocal Web Dashboard" width="880" style="border-radius: 12px;" />
+</p>
+
+### 3. Structured Obsidian Vault Notes
+Automatically formatted Markdown notes with YAML frontmatter, audio player link, executive summary, and actionable checkboxes.
+
+<p align="center">
+  <img src="docs/images/obsidian_note.png?raw=true" alt="VoxLocal Obsidian Vault Note" width="880" style="border-radius: 12px;" />
+</p>
+
+---
 
 ## Why VoxLocal
 

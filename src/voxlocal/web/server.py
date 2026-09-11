@@ -513,6 +513,13 @@ class VoxLocalHTTPHandler(http.server.BaseHTTPRequestHandler):
 
 def start_web_server(host: str = "127.0.0.1", port: int = 5432) -> http.server.ThreadingHTTPServer:
     """Instantiate and start threading HTTP server."""
-    server = http.server.ThreadingHTTPServer((host, port), VoxLocalHTTPHandler)
+    try:
+        server = http.server.ThreadingHTTPServer((host, port), VoxLocalHTTPHandler)
+    except OSError as exc:
+        fallback_port = 8543 if port != 8543 else 8080
+        logger.warning("Could not bind port %d (%s), attempting fallback to port %d", port, exc, fallback_port)
+        server = http.server.ThreadingHTTPServer((host, fallback_port), VoxLocalHTTPHandler)
+        port = fallback_port
+
     logger.info("VoxLocal web server running on http://%s:%d", host, port)
     return server

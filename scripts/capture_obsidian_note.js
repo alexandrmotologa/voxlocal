@@ -1,0 +1,125 @@
+const fs = require('fs');
+const { Resvg } = require('@resvg/resvg-js');
+
+function buildObsidianSvg() {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900">
+  <defs>
+    <filter id="card-shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="#000000" flood-opacity="0.35" />
+    </filter>
+  </defs>
+
+  <!-- Obsidian App Dark Background (#1e1e1e / #181818) -->
+  <rect x="0" y="0" width="1200" height="900" fill="#161618" />
+
+  <!-- App Header Bar -->
+  <rect x="0" y="0" width="1200" height="44" fill="#1c1c1f" />
+  <circle cx="24" cy="22" r="6" fill="#ff5f56" />
+  <circle cx="44" cy="22" r="6" fill="#ffbd2e" />
+  <circle cx="64" cy="22" r="6" fill="#27c93f" />
+
+  <text x="600" y="27" fill="#8b8b93" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="500" text-anchor="middle">
+    Architecture Sync: Distributed Audio Pipeline — Obsidian Vault
+  </text>
+
+  <!-- Left Sidebar (Vault Tree Outline) -->
+  <rect x="0" y="44" width="240" height="856" fill="#19191c" stroke="#252529" stroke-width="1" />
+  <text x="20" y="78" fill="#6e6e76" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11" font-weight="700" letter-spacing="0.5">FILES</text>
+  
+  <text x="24" y="108" fill="#9e9ea6" font-family="sans-serif" font-size="13">📁 Daily Notes</text>
+  <text x="24" y="136" fill="#a78bfa" font-family="sans-serif" font-size="13" font-weight="600">📁 Meetings</text>
+  <text x="40" y="162" fill="#7c3aed" font-family="sans-serif" font-size="12">📄 2026-09-12-arch-sync.md</text>
+  <text x="40" y="188" fill="#71717a" font-family="sans-serif" font-size="12">📄 2026-09-10-core-audio.md</text>
+  <text x="40" y="214" fill="#71717a" font-family="sans-serif" font-size="12">📄 2026-09-08-team-standup.md</text>
+  <text x="24" y="244" fill="#9e9ea6" font-family="sans-serif" font-size="13">📁 Architecture</text>
+  <text x="24" y="272" fill="#9e9ea6" font-family="sans-serif" font-size="13">📁 System Design</text>
+
+  <!-- Main Note Editor Container -->
+  <g transform="translate(290, 75)">
+    <!-- Note Title -->
+    <text x="0" y="30" fill="#f4f4f5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="28" font-weight="700">
+      Architecture Sync: Distributed Audio Pipeline
+    </text>
+
+    <!-- YAML Frontmatter Container -->
+    <rect x="0" y="52" width="850" height="135" rx="8" fill="#202024" stroke="#2d2d32" stroke-width="1" />
+    <text x="18" y="76" fill="#71717a" font-family="'JetBrains Mono', Consolas, monospace" font-size="11">---</text>
+    <text x="18" y="96" fill="#a1a1aa" font-family="'JetBrains Mono', Consolas, monospace" font-size="12"><tspan fill="#38bdf8">date:</tspan> 2026-09-12  |  <tspan fill="#38bdf8">duration:</tspan> 18m 42s  |  <tspan fill="#38bdf8">preset:</tspan> architecture_review</text>
+    <text x="18" y="118" fill="#a1a1aa" font-family="'JetBrains Mono', Consolas, monospace" font-size="12"><tspan fill="#38bdf8">participants:</tspan> [You (Local), Remote Speaker 1, Remote Speaker 2]</text>
+    <text x="18" y="140" fill="#a1a1aa" font-family="'JetBrains Mono', Consolas, monospace" font-size="12"><tspan fill="#38bdf8">tags:</tspan> #meeting/architecture #voxlocal #audio-engine</text>
+    <text x="18" y="162" fill="#71717a" font-family="'JetBrains Mono', Consolas, monospace" font-size="11">---</text>
+
+    <!-- Audio Player Mockup -->
+    <rect x="0" y="202" width="850" height="42" rx="6" fill="#27272a" stroke="#3f3f46" stroke-width="1" />
+    <circle cx="24" cy="223" r="11" fill="#7c3aed" />
+    <polygon points="21,217 30,223 21,229" fill="#ffffff" />
+    <text x="44" y="228" fill="#e4e4e7" font-family="-apple-system, sans-serif" font-size="12" font-weight="500">2026-09-12-arch-sync.wav</text>
+    <line x1="210" y1="223" x2="740" y2="223" stroke="#52525b" stroke-width="3" stroke-linecap="round" />
+    <line x1="210" y1="223" x2="420" y2="223" stroke="#a78bfa" stroke-width="3" stroke-linecap="round" />
+    <circle cx="420" cy="223" r="5" fill="#c4b5fd" />
+    <text x="760" y="227" fill="#a1a1aa" font-family="'JetBrains Mono', monospace" font-size="11">08:14 / 18:42</text>
+
+    <!-- Executive Summary Heading -->
+    <text x="0" y="278" fill="#a78bfa" font-family="-apple-system, sans-serif" font-size="18" font-weight="600">## Executive Summary</text>
+    <text x="0" y="304" fill="#d4d4d8" font-family="-apple-system, sans-serif" font-size="14" font-weight="400">
+      The team reviewed WASAPI loopback audio capture latency and multi-channel ring buffer synchronization.
+    </text>
+    <text x="0" y="326" fill="#d4d4d8" font-family="-apple-system, sans-serif" font-size="14" font-weight="400">
+      Zero packet drops were recorded across 3-second sliding chunks under synthetic load.
+    </text>
+
+    <!-- Key Decisions Heading -->
+    <text x="0" y="368" fill="#a78bfa" font-family="-apple-system, sans-serif" font-size="18" font-weight="600">## Key Decisions</text>
+    <text x="0" y="394" fill="#e4e4e7" font-family="-apple-system, sans-serif" font-size="14">
+      • <tspan font-weight="600">WASAPI Loopback Capture:</tspan> Retain dual-stream duplex capture for clean speaker isolation.
+    </text>
+    <text x="0" y="418" fill="#e4e4e7" font-family="-apple-system, sans-serif" font-size="14">
+      • <tspan font-weight="600">PII Redaction Layer:</tspan> Execute deterministic regex masking before LLM inference or vault commit.
+    </text>
+
+    <!-- Action Items Heading -->
+    <text x="0" y="460" fill="#a78bfa" font-family="-apple-system, sans-serif" font-size="18" font-weight="600">## Action Items</text>
+    
+    <!-- Checkbox 1 -->
+    <rect x="0" y="478" width="16" height="16" rx="3" fill="#22c55e" />
+    <polyline points="4,486 7,490 13,482" fill="none" stroke="#ffffff" stroke-width="2" />
+    <text x="26" y="491" fill="#71717a" font-family="-apple-system, sans-serif" font-size="14" text-decoration="line-through">
+      Calibrate Silero VAD energy threshold for low-volume remote speakers
+    </text>
+
+    <!-- Checkbox 2 -->
+    <rect x="0" y="508" width="16" height="16" rx="3" fill="none" stroke="#71717a" stroke-width="1.5" />
+    <text x="26" y="521" fill="#e4e4e7" font-family="-apple-system, sans-serif" font-size="14">
+      Benchmark faster-whisper CTranslate2 model on CPU int8 and publish metrics (@Remote Speaker 1)
+    </text>
+
+    <!-- Checkbox 3 -->
+    <rect x="0" y="538" width="16" height="16" rx="3" fill="none" stroke="#71717a" stroke-width="1.5" />
+    <text x="26" y="551" fill="#e4e4e7" font-family="-apple-system, sans-serif" font-size="14">
+      Integrate SQLite FTS5 search index with companion web HUD (@You)
+    </text>
+
+    <!-- Key Takeaways Callout Box -->
+    <rect x="0" y="584" width="850" height="96" rx="8" fill="#1e1b2e" stroke="#6d28d9" stroke-width="1.5" />
+    <text x="18" y="612" fill="#c4b5fd" font-family="-apple-system, sans-serif" font-size="14" font-weight="700">⭐ Key Takeaways (Bookmarked Live)</text>
+    <text x="18" y="636" fill="#e4e4e7" font-family="-apple-system, sans-serif" font-size="13">
+      1. Dual-stream WASAPI loopback eliminates the need for virtual audio cables or third-party bots.
+    </text>
+    <text x="18" y="658" fill="#e4e4e7" font-family="-apple-system, sans-serif" font-size="13">
+      2. The local Obsidian vault maintains complete user privacy with zero cloud dependencies.
+    </text>
+
+  </g>
+</svg>`;
+}
+
+function render() {
+  const svg = buildObsidianSvg();
+  fs.writeFileSync('docs/images/obsidian_note.svg', svg);
+  const resvg = new Resvg(svg, { fitTo: { mode: 'width', value: 1200 } });
+  const png = resvg.render().asPng();
+  fs.writeFileSync('docs/images/obsidian_note.png', png);
+  console.log('Saved docs/images/obsidian_note.png, size:', png.length);
+}
+
+render();
