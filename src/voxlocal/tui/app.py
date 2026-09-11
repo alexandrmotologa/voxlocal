@@ -10,17 +10,20 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
+from voxlocal.audio.archiver import AudioArchiver
 from voxlocal.audio.loopback import LoopbackStreamReader
 from voxlocal.audio.mic import MicStreamReader
 from voxlocal.audio.mixer import DualChannelAudioMixer
 from voxlocal.audio.vad import VoiceActivityDetector
 from voxlocal.config import VoxLocalSettings
+from voxlocal.daemon.notify import send_notification
 from voxlocal.synthesis.summarizer import Summarizer
 from voxlocal.synthesis.vault_writer import VaultWriter, format_duration
 from voxlocal.transcription.chunker import StreamingAudioChunker
 from voxlocal.transcription.diarization import SpeakerDiarizer
 from voxlocal.transcription.whisper_engine import TranscriptSegment, WhisperEngine
 from voxlocal.tui.widgets import AudioVuMeter, TranscriptFeed
+from voxlocal.web.server import SharedWebState
 
 
 class LiveRecordingHUD:
@@ -36,6 +39,9 @@ class LiveRecordingHUD:
         whisper_model: str | None = None,
         ollama_model: str | None = None,
         vault_dir: Path | None = None,
+        save_audio: bool = False,
+        open_obsidian: bool = False,
+        git_commit: bool = False,
     ):
         self.settings = settings
         self.meeting_name = meeting_name
@@ -45,6 +51,9 @@ class LiveRecordingHUD:
         self.whisper_model_size = whisper_model or settings.transcription.model_size
         self.ollama_model_name = ollama_model or settings.synthesis.ollama_model
         self.vault_dir = vault_dir or settings.synthesis.vault_dir
+        self.save_audio = save_audio
+        self.open_obsidian = open_obsidian
+        self.git_commit = git_commit
 
         self.console = Console()
         self.segments: list[TranscriptSegment] = []
@@ -137,14 +146,25 @@ class LiveRecordingHUD:
         self.console.print("[bold cyan]VoxLocal[/] v0.1.0 — Initializing audio capture...\n")
         self.console.print(f"[dim]Microphone: {self.mic_reader.device_name}[/]")
         self.console.print(f"[dim]Loopback:   {self.loopback_reader.device_name}[/]\n")
-
         self._running = True
         self._start_time = time.time()
         start_datetime = datetime.now()
 
+        # Audio archiver
+        archiver = AudioArchiver(target_dir=self.vault_dir / ".audio") if self.save_audio else None
+
+        # Update SharedWebState
+        SharedWebState.is_recording = True
+        SharedWebState.meeting_name = self.meeting_name
+        SharedWebState.preset = self.preset
+        SharedWebState.segments = []
+        SharedWebState.bookmarks_count = 0
+
         # Start audio capture threads
         self.mic_reader.start()
         self.loopback_reader.start()
+
+        send_notification("VoxLocal Started", f"Recording '{self.meeting_name}' ({self.preset})")
 
         try:
             with Live(self._render_layout(), refresh_per_second=8, console=self.console) as live:
@@ -153,6 +173,8 @@ class LiveRecordingHUD:
                     frame = self.mixer.pull_frame(timeout=0.05)
                     if frame is not None:
                         self.chunker.add_frame(frame)
+                        if archiver:
+                            archiver.add_frame(frame)
 
                     # Extract chunk for transcription if buffer is ready
                     chunk = self.chunker.extract_chunk()
@@ -163,6 +185,21 @@ class LiveRecordingHUD:
                             self.segments.append(seg)
                             self.diarizer.record_words(seg.speaker, len(seg.text.split()))
 
+                    # Update Web state
+                    m_rms, lb_rms = self.mixer.current_rms_levels
+                    SharedWebState.mic_rms = m_rms
+                    SharedWebState.loopback_rms = lb_rms
+                    SharedWebState.elapsed_sec = time.time() - self._start_time
+                    SharedWebState.segments = [
+                        {
+                            "speaker": s.speaker,
+                            "text": s.text,
+                            "formatted_timestamp": s.formatted_timestamp,
+                            "is_bookmarked": getattr(s, "is_bookmarked", False),
+                        }
+                        for s in self.segments
+                    ]
+
                     live.update(self._render_layout())
                     time.sleep(0.01)
 
@@ -170,6 +207,7 @@ class LiveRecordingHUD:
             self.console.print("\n[bold yellow]Stopping audio recording...[/]")
         finally:
             self._running = False
+            SharedWebState.is_recording = False
             self.mic_reader.stop()
             self.loopback_reader.stop()
 
@@ -183,6 +221,14 @@ class LiveRecordingHUD:
             for seg in new_segments:
                 self.segments.append(seg)
                 self.diarizer.record_words(seg.speaker, len(seg.text.split()))
+
+        # Save audio if requested
+        saved_audio_path = None
+        if archiver:
+            from voxlocal.synthesis.vault_writer import slugify_title
+            saved_audio_path = archiver.save(f"{start_datetime.strftime('%Y-%m-%d')}_{slugify_title(self.meeting_name)}")
+            if saved_audio_path:
+                self.console.print(f"[dim]Saved meeting audio to: {saved_audio_path}[/]")
 
         self.console.print("[bold green]Generating Markdown notes with synthesis engine...[/]")
         summary_md = self.summarizer.summarize(
@@ -200,7 +246,12 @@ class LiveRecordingHUD:
             preset=self.preset,
             start_time=start_datetime,
             duration_sec=duration,
+            audio_path=saved_audio_path,
+            open_in_obsidian=self.open_obsidian,
+            git_commit=self.git_commit,
         )
+
+        send_notification("VoxLocal Notes Saved", f"Saved to {note_path.name}")
 
         # Print success summary
         self.console.print(

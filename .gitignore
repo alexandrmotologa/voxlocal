@@ -47,6 +47,10 @@ models/
 *.m4a
 transcripts/
 recordings/
+meetings/
+*.db
+*.db-wal
+*.db-shm
 .cache/
 
 # OS

@@ -156,9 +156,22 @@ class Summarizer:
             "",
             "## Executive Summary",
             f"Meeting recorded via VoxLocal with preset `{preset}`. Contains {len(segments)} transcribed dialogue turns.",
+        ]
+
+        # Check for bookmarked moments
+        bookmarks = [s for s in segments if getattr(s, "is_bookmarked", False)]
+        if bookmarks:
+            md_lines.extend([
+                "",
+                "## Bookmarked Key Moments",
+            ])
+            for b in bookmarks:
+                md_lines.append(f"- ⭐ {b.formatted_timestamp} **@{b.speaker}**: {b.text}")
+
+        md_lines.extend([
             "",
             "## Decisions Made",
-        ]
+        ])
 
         if unique_decisions:
             md_lines.extend(unique_decisions[:10])

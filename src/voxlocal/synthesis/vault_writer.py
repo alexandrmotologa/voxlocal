@@ -1,6 +1,10 @@
 """Markdown vault writer supporting Obsidian frontmatter and structured notes."""
 
+import logging
+import os
 import re
+import subprocess
+import webbrowser
 from datetime import datetime
 from pathlib import Path
 
@@ -8,6 +12,8 @@ import yaml
 
 from voxlocal.transcription.diarization import SpeakerStats
 from voxlocal.transcription.whisper_engine import TranscriptSegment
+
+logger = logging.getLogger(__name__)
 
 
 def slugify_title(title: str) -> str:
@@ -41,6 +47,9 @@ class VaultWriter:
         start_time: datetime | None = None,
         duration_sec: float = 0.0,
         extra_tags: list[str] | None = None,
+        audio_path: Path | None = None,
+        open_in_obsidian: bool = False,
+        git_commit: bool = False,
     ) -> Path:
         """Construct frontmatter, combine with summary markdown, and write to vault."""
         now = start_time or datetime.now()
@@ -79,6 +88,13 @@ class VaultWriter:
             "tags": tags,
         }
 
+        if audio_path:
+            try:
+                rel_audio = os.path.relpath(audio_path, self.vault_dir)
+            except ValueError:
+                rel_audio = str(audio_path)
+            frontmatter_data["audio_file"] = rel_audio
+
         # Dump YAML frontmatter
         yaml_str = yaml.dump(frontmatter_data, sort_keys=False, default_flow_style=False)
         frontmatter_block = f"---\n{yaml_str}---\n\n"
@@ -103,4 +119,51 @@ class VaultWriter:
             counter += 1
 
         target_file.write_text(full_content, encoding="utf-8")
+
+        # Auto-index meeting into SQLite FTS5 database
+        try:
+            from voxlocal.knowledge.database import KnowledgeDB
+            db = KnowledgeDB()
+            db.index_meeting(
+                title=title,
+                date=date_str,
+                duration=format_duration(duration_sec),
+                preset=preset,
+                participants=participants,
+                vault_file=target_file,
+                summary=summary_markdown,
+                segments=segments,
+            )
+            logger.info("Indexed meeting '%s' into local knowledge base.", title)
+        except Exception as exc:
+            logger.debug("Failed auto-indexing meeting into knowledge base: %s", exc)
+
+        # Auto-open in Obsidian or system editor if requested
+        if open_in_obsidian:
+            self._open_in_obsidian(target_file)
+
+        # Git auto-commit if requested
+        if git_commit:
+            self._git_commit_file(target_file, title)
+
         return target_file
+
+    def _open_in_obsidian(self, file_path: Path) -> None:
+        """Trigger Obsidian protocol or OS file open."""
+        try:
+            vault_name = self.vault_dir.name
+            obsidian_uri = f"obsidian://open?vault={vault_name}&file={file_path.stem}"
+            webbrowser.open(obsidian_uri)
+            logger.info("Triggered Obsidian open URI: %s", obsidian_uri)
+        except Exception as exc:
+            logger.debug("Failed opening via obsidian URI: %s", exc)
+
+    def _git_commit_file(self, file_path: Path, title: str) -> None:
+        """Commit new note to Git repository inside vault_dir."""
+        try:
+            subprocess.run(["git", "add", str(file_path)], cwd=str(self.vault_dir), check=True, capture_output=True)
+            msg = f"docs(meeting): record {title}"
+            subprocess.run(["git", "commit", "-m", msg], cwd=str(self.vault_dir), check=True, capture_output=True)
+            logger.info("Committed %s to Git vault.", file_path.name)
+        except Exception as exc:
+            logger.debug("Git commit in vault failed: %s", exc)

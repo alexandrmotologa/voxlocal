@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+from voxlocal.security.redactor import redact_text
 from voxlocal.transcription.chunker import AudioChunk
 
 logger = logging.getLogger(__name__)
@@ -47,6 +48,7 @@ class TranscriptSegment:
     channel: str = "mixed"
     confidence: float = 1.0
     words: list[TranscriptWord] = field(default_factory=list)
+    is_bookmarked: bool = False
 
     @property
     def formatted_timestamp(self) -> str:
@@ -55,7 +57,8 @@ class TranscriptSegment:
         s_start = int(self.start % 60)
         m_end = int(self.end // 60)
         s_end = int(self.end % 60)
-        return f"[{m_start:02d}:{s_start:02d} -> {m_end:02d}:{s_end:02d}]"
+        prefix = "⭐ " if self.is_bookmarked else ""
+        return f"{prefix}[{m_start:02d}:{s_start:02d} -> {m_end:02d}:{s_end:02d}]"
 
 
 class WhisperEngine:
@@ -154,7 +157,7 @@ class WhisperEngine:
             )
 
             for raw in raw_segments:
-                text = raw.text.strip()
+                text = redact_text(raw.text.strip())
                 if self.is_hallucination(text, getattr(raw, "no_speech_prob", 0.0)):
                     continue
 

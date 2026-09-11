@@ -41,10 +41,15 @@ VoxLocal runs entirely on your local machine. It captures audio at the driver la
 - Voice activity filtering: Silero VAD prunes silence, keystrokes, and background noise before inference.
 - Fast local transcription: Uses faster-whisper and CTranslate2 with INT8 quantization for sub-second streaming latency on CPU or GPU.
 - Speaker attribution: Distinguishes your microphone input from remote call participants based on audio stream source.
+- PII and secret redaction: Automatically sanitizes API keys, tokens, passwords, and personal information before saving notes.
+- Live bookmarking: Flag critical moments during meetings with key takeaways highlighted in final notes.
 - Local LLM notes synthesis: Connects to local Ollama or Llama.cpp servers to produce executive summaries, key decisions, and action items with assignees.
 - Offline extractive fallback: If your local LLM daemon is offline, VoxLocal generates structured notes using an internal rule-based parser so records are preserved.
-- Direct Markdown vault export: Automatically formats files with YAML frontmatter for Obsidian, Logseq, or Git repositories.
-- Interactive terminal HUD: Live dual-channel VU meters, real-time transcript streaming, and audio diagnostic tools.
+- Knowledge base search and Q&A: Fast local full-text search (SQLite FTS5) across past meetings with `voxlocal search` and natural language Q&A with `voxlocal ask`.
+- Obsidian and Git automation: Automatically opens new notes in Obsidian (`--open-obsidian`) and commits them to Git (`--git-commit`).
+- Audio archiving: Optionally archives 16kHz WAV audio alongside meeting notes (`--save-audio`).
+- Companion web dashboard: Real-time browser HUD (`voxlocal serve`) with live waveforms, transcript feed, and quick-copy tools.
+- Background hotkey daemon: Start and stop recording anywhere with `Win+Alt+R` and desktop toast notifications (`voxlocal daemon`).
 
 ## Installation
 

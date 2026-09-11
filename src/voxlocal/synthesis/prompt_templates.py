@@ -8,8 +8,9 @@ Strict Formatting Rules:
 1. Write clearly and concisely in active voice.
 2. Extract all concrete action items as checklist items: - [ ] @Person: Task description.
 3. Capture key technical and architectural decisions, trade-offs, and agreements.
-4. Do not invent details not mentioned in the transcript.
-5. Do not include introductory phrases like "Here is the summary".
+4. If any transcript segments are marked with ⭐, highlight them under a dedicated '## Bookmarked Key Moments' section.
+5. Do not invent details not mentioned in the transcript.
+6. Do not include introductory phrases like "Here is the summary".
 """
 
 PRESET_TEMPLATES: dict[str, str] = {

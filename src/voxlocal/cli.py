@@ -1,6 +1,7 @@
 """Command Line Interface for VoxLocal."""
 
 import json
+import threading
 import time
 from pathlib import Path
 
@@ -15,10 +16,15 @@ from voxlocal.audio.loopback import LoopbackStreamReader
 from voxlocal.audio.mic import MicStreamReader
 from voxlocal.audio.resampler import calculate_db
 from voxlocal.config import settings
+from voxlocal.daemon.hotkey import GlobalHotkeyListener
+from voxlocal.daemon.notify import send_notification
+from voxlocal.knowledge.database import KnowledgeDB
+from voxlocal.knowledge.search import ask_meetings
 from voxlocal.synthesis.summarizer import Summarizer
 from voxlocal.synthesis.vault_writer import VaultWriter
 from voxlocal.transcription.whisper_engine import TranscriptSegment
 from voxlocal.tui.app import LiveRecordingHUD
+from voxlocal.web.server import start_web_server
 
 app = typer.Typer(
     name="voxlocal",
@@ -52,6 +58,9 @@ def record_cmd(
     whisper_model: str | None = typer.Option(None, "--whisper-model", "-w", help="Whisper model: tiny.en, base.en, small.en, medium.en."),
     ollama_model: str | None = typer.Option(None, "--ollama-model", "-o", help="Ollama model for summarization."),
     vault: Path | None = typer.Option(None, "--vault", help="Target directory for Obsidian / Markdown notes."),
+    save_audio: bool = typer.Option(False, "--save-audio", help="Archive 16kHz WAV audio alongside meeting notes."),
+    open_obsidian: bool = typer.Option(False, "--open-obsidian", help="Automatically open note in Obsidian upon completion."),
+    git_commit: bool = typer.Option(False, "--git-commit", help="Automatically commit new note to Git inside vault directory."),
 ):
     """Start real-time meeting recording and live terminal HUD."""
     hud = LiveRecordingHUD(
@@ -63,6 +72,9 @@ def record_cmd(
         whisper_model=whisper_model,
         ollama_model=ollama_model,
         vault_dir=vault,
+        save_audio=save_audio,
+        open_obsidian=open_obsidian,
+        git_commit=git_commit,
     )
     hud.run()
 
@@ -234,6 +246,108 @@ def config_cmd(
             border_style="cyan",
         )
     )
+
+
+@app.command("search")
+def search_cmd(
+    query: str = typer.Argument(..., help="Search query or keyword."),
+    limit: int = typer.Option(10, "--limit", "-l", help="Maximum results to return."),
+):
+    """Search meeting transcripts across the local knowledge base."""
+    db = KnowledgeDB()
+    results = db.search(query, limit=limit)
+
+    if not results:
+        console.print(f"[yellow]No matching dialogue found for query:[/] '{query}'")
+        return
+
+    table = Table(title=f"Search Results for '{query}'", border_style="cyan")
+    table.add_column("Meeting", style="bold white", width=24)
+    table.add_column("Date", style="dim", width=12)
+    table.add_column("Time", style="dim", width=8)
+    table.add_column("Speaker", style="cyan", width=16)
+    table.add_column("Dialogue Excerpt", ratio=1)
+
+    for r in results:
+        m = int(r.start_sec // 60)
+        s = int(r.start_sec % 60)
+        table.add_row(r.title, r.date, f"{m:02d}:{s:02d}", r.speaker, r.text)
+
+    console.print(table)
+
+
+@app.command("ask")
+def ask_cmd(
+    question: str = typer.Argument(..., help="Question to ask your past meetings."),
+    ollama_url: str | None = typer.Option(None, "--ollama-url", help="Ollama API base URL."),
+    ollama_model: str | None = typer.Option(None, "--ollama-model", help="Ollama model for QA synthesis."),
+):
+    """Query past meetings and synthesize an answer using local LLM."""
+    url = ollama_url or settings.synthesis.ollama_url
+    model = ollama_model or settings.synthesis.ollama_model
+    db = KnowledgeDB()
+
+    with console.status(f"[bold cyan]Searching knowledge base & querying {model}...[/]"):
+        answer = ask_meetings(question, db=db, ollama_url=url, model_name=model)
+
+    console.print(
+        Panel(
+            answer,
+            title=f"[bold green]VoxLocal Q&A: {question}[/]",
+            border_style="green",
+        )
+    )
+
+
+@app.command("serve")
+def serve_cmd(
+    host: str = typer.Option("127.0.0.1", "--host", "-h", help="Bind host address."),
+    port: int = typer.Option(5432, "--port", "-p", help="Bind port."),
+):
+    """Start local companion web dashboard on http://localhost:5432."""
+    console.print(f"[bold cyan]Starting VoxLocal Web Companion on http://{host}:{port}...[/]")
+    console.print("[dim]Open your browser to view live waveforms, search past meetings, and copy summaries.\n[/]")
+    server = start_web_server(host=host, port=port)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Stopping web dashboard...[/]")
+    finally:
+        server.server_close()
+
+
+@app.command("daemon")
+def daemon_cmd(
+    preset: str = typer.Option("general", "--preset", "-p", help="Default preset for quick recordings."),
+):
+    """Run in background listening for system global hotkey (Win+Alt+R)."""
+    console.print("[bold cyan]VoxLocal Background Daemon Active[/]")
+    console.print("[dim]Press [bold yellow]Win+Alt+R[/] anywhere to start or stop recording.[/]")
+    console.print("[dim]Desktop notifications will confirm recording status. Press Ctrl+C to exit daemon.\n[/]")
+
+    active_hud: LiveRecordingHUD | None = None
+
+    def toggle_recording():
+        nonlocal active_hud
+        if active_hud is None or not active_hud._running:
+            console.print("[bold green]Global Hotkey triggered: Starting recording...[/]")
+            send_notification("VoxLocal", "Recording started via global hotkey.")
+            active_hud = LiveRecordingHUD(settings=settings, meeting_name="Quick Meeting", preset=preset)
+            threading.Thread(target=active_hud.run, daemon=True).start()
+        else:
+            console.print("[bold yellow]Global Hotkey triggered: Stopping recording...[/]")
+            active_hud._running = False
+
+    listener = GlobalHotkeyListener(callback=toggle_recording)
+    listener.start()
+
+    try:
+        while True:
+            time.sleep(1.0)
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Stopping VoxLocal background daemon...[/]")
+    finally:
+        listener.stop()
 
 
 if __name__ == "__main__":
