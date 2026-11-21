@@ -20,6 +20,11 @@
 
 ## Visual Interfaces
 
+### Live Walkthrough Demo
+<p align="center">
+  <img src="docs/images/voxlocal_demo.gif?raw=true" alt="VoxLocal Live Walkthrough Demo" width="880" style="border-radius: 12px;" />
+</p>
+
 ### 1. Interactive Terminal HUD
 Live Rich terminal interface featuring dual-channel audio VU levels (WASAPI), diarized speaker turns, and instant bookmark shortcuts.
 

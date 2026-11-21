@@ -52,6 +52,12 @@ def main(
     """VoxLocal: Offline meeting assistant and ambient audio copilot."""
 
 
+@app.command("version")
+def version_cmd() -> None:
+    """Show VoxLocal version."""
+    console.print(f"[bold cyan]VoxLocal[/] version [bold white]{__version__}[/]")
+
+
 @app.command("record")
 def record_cmd(
     title: str = typer.Argument("Meeting Session", help="Title or subject of the meeting."),

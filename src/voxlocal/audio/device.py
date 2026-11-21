@@ -1,8 +1,10 @@
 """Audio device discovery and hardware selection utilities."""
 
+from __future__ import annotations
 
 import logging
 import warnings
+from typing import Any
 
 import soundcard as sc
 
@@ -46,7 +48,7 @@ def list_loopback_devices() -> list[dict[str, str]]:
     return devices
 
 
-def get_default_devices() -> tuple[sc.default_microphone | None, sc.default_speaker | None]:
+def get_default_devices() -> tuple[Any, Any]:
     """Retrieve default input microphone and default loopback speaker."""
     mic = None
     loopback = None
