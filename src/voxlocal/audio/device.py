@@ -6,15 +6,21 @@ import logging
 import warnings
 from typing import Any
 
-import soundcard as sc
-
 warnings.filterwarnings("ignore", message=".*data discontinuity in recording.*")
 
 logger = logging.getLogger(__name__)
 
+try:
+    import soundcard as sc
+except Exception as exc:
+    sc = None
+    logger.warning("Could not initialize soundcard backend: %s", exc)
+
 
 def list_microphones() -> list[dict[str, str]]:
     """List available input microphones (excluding loopback devices)."""
+    if sc is None:
+        return [{"index": "0", "id": "mock", "name": "Mock Microphone (Headless)", "channels": "1"}]
     devices = []
     try:
         mics = sc.all_microphones(include_loopback=False)
@@ -32,6 +38,8 @@ def list_microphones() -> list[dict[str, str]]:
 
 def list_loopback_devices() -> list[dict[str, str]]:
     """List available loopback devices for capturing system speaker audio."""
+    if sc is None:
+        return [{"index": "0", "id": "mock-loopback", "name": "Mock Loopback (Headless)", "channels": "2"}]
     devices = []
     try:
         all_mics = sc.all_microphones(include_loopback=True)
@@ -50,6 +58,8 @@ def list_loopback_devices() -> list[dict[str, str]]:
 
 def get_default_devices() -> tuple[Any, Any]:
     """Retrieve default input microphone and default loopback speaker."""
+    if sc is None:
+        return None, None
     mic = None
     loopback = None
     try:
@@ -60,20 +70,13 @@ def get_default_devices() -> tuple[Any, Any]:
     try:
         # On Windows WASAPI, the loopback device is obtained via get_microphone(id, include_loopback=True)
         # or from default_speaker().
-        speaker = sc.default_speaker()
-        if speaker is not None:
-            # Soundcard allows matching loopback microphone by speaker id or name
-            all_mics = sc.all_microphones(include_loopback=True)
-            for m in all_mics:
-                if getattr(m, "isloopback", False) and (m.name == speaker.name or m.id == speaker.id):
-                    loopback = m
-                    break
-            if loopback is None:
-                # Fallback to first loopback device found
-                lbs = [m for m in all_mics if getattr(m, "isloopback", False)]
-                if lbs:
-                    loopback = lbs[0]
+        all_mics = sc.all_microphones(include_loopback=True)
+        loopbacks = [m for m in all_mics if getattr(m, "isloopback", False)]
+        if loopbacks:
+            loopback = loopbacks[0]
+        else:
+            loopback = sc.default_speaker()
     except Exception as exc:
-        logger.debug("Could not get default loopback speaker: %s", exc)
+        logger.debug("Could not get default loopback/speaker: %s", exc)
 
     return mic, loopback

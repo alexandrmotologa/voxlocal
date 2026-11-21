@@ -5,7 +5,11 @@ import threading
 from collections.abc import Callable
 
 import numpy as np
-import soundcard as sc
+
+try:
+    import soundcard as sc
+except Exception:
+    sc = None
 
 from voxlocal.audio.device import get_default_devices
 from voxlocal.audio.resampler import resample_audio, to_mono
